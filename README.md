@@ -42,7 +42,7 @@ mock --proxy 11.22.33.44 --save ./data.json
       "field1": 1,
       "field2": 2
     },
-    "headers: {
+    "headers": {
       "Content-Type": "application/json"
     }
   }
