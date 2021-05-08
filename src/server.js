@@ -15,9 +15,12 @@ function startServer(dataSets, port) {
   const server = http.createServer(app);
   app.use(cors());
   app.all('*', (req, res) => {
-    let key = req.method.toUpperCase() + '|' + req.path;
+    let key = req.method.toUpperCase() + '|' + req.url;
     let data = getData(hostedData, key);
-    res.json(data|| {});
+    if (data.headers) {
+      res.set(data.headers);
+    }
+    res.send(data.data);
   });
   server.on('error', e => {
     if (e.code === 'EADDRINUSE') {
@@ -28,7 +31,7 @@ function startServer(dataSets, port) {
     }
   });
   server.listen(port, () => {
-    console.log(`server started at http://localhost:${port}\n`);
+    console.log(`Server started at http://localhost:${port}\n`);
   });
 }
 

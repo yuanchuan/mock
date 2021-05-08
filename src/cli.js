@@ -1,24 +1,42 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 const watch = require('node-watch')
 const chalk = require('chalk');
 const { program } = require('commander');
 
 const { startServer, updateHostedData } = require('./server');
+const { startProxyServer } = require('./proxy-server');
 
 let defaultPort = 3456;
 
 program.version(require('../package').version);
 
 program
-  .arguments('<data>')
+  .arguments('[data]')
   .option('-p, --port <port>', `server port (default: ${defaultPort})`)
+  .option('-P, --proxy <proxy>', 'start proxy server from url or .env file')
+  .option('-s, --save <data>', 'save requests to local data file')
   .action(run)
   .parse();
 
 function run(source, options) {
+  if (options.data) {
+    fs.ensureFileSync(options.data);
+  }
+  if (options.proxy) {
+    return startProxyServer(
+      options.proxy,
+      options.port || defaultPort,
+      options.data
+    );
+  }
+
+  if (!source) {
+    source = './';
+  }
+
   if (!fs.existsSync(source)) {
     console.log(`\n'${source}' does not exist.`);
     process.exit(1);
