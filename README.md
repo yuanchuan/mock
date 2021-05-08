@@ -5,7 +5,14 @@ Serve JSON files from local data sets or use as a proxy.
 ## Installation
 
 ```bash
-npm link
+git clone git@github.com:yuanchuan/mock
+cd mock && npm link
+```
+
+Or from npm:
+
+```bash
+npm i @yuanchuan/mock -g
 ```
 
 ## Usage
