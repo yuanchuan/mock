@@ -1,29 +1,23 @@
 const fs = require('fs');
+
 const chalk = require('chalk');
 const request = require('superagent');
 const libUrl  = require('url');
 const { join, basename } = require('path');
 const Cache = require('./cache');
 
-function proxy(url) {
-  let parsedURL = libUrl.parse(url);
-  let { port, hostname, path, protocol } = parsedURL;
-  if (port) {
-    hostname += ':' + port;
-  }
-  let prefix = (protocol || 'http:') + '//' + (hostname || '') + (path || '');
-  return function(method, { query, data, headers, path }) {
-    let urlPath = new libUrl.URL(path, prefix).href;
-    console.log(
-      chalk.green(method),
-      chalk.gray(urlPath)
-    );
-    headers.host = headers.origin = (hostname || url);
-    return request(method, urlPath)
-      .set(headers)
-      .query(query)
-      .send(data)
-  }
+function proxy(method, url, { query, data, headers, path }) {
+  let { full, hostname } = normizeUrl(url);
+  let urlPath = new libUrl.URL(path, full).href;
+  console.log(
+    chalk.green(method),
+    chalk.gray(urlPath)
+  );
+  headers.host = headers.origin = (hostname || url);
+  return request(method, urlPath)
+    .set(headers)
+    .query(query)
+    .send(data)
 }
 
 function parseEnv(content) {
@@ -44,9 +38,21 @@ function getUrlFromEnv(name) {
   try {
     let config = fs.readFileSync(name, 'utf8');
     let parsed = parseEnv(config);
-    let [_, url] = parsed.find(([name, value]) => /API/i.test(name))
-    return url;
+    return parsed.filter(([name, value]) => /API/i.test(name))
+      .map(n => n[1]);
   } catch (e) {}
+}
+
+function normizeUrl(url) {
+  let parsedURL = libUrl.parse(url);
+  let { port, hostname, path, protocol } = parsedURL;
+  if (port) {
+    hostname += ':' + port;
+  }
+  return {
+    full: `${protocol||'http:'}//${hostname||''}${path||''}`,
+    hostname
+  }
 }
 
 function startServer(url, port, cacheFile) {
@@ -57,23 +63,35 @@ function startServer(url, port, cacheFile) {
   const http = require('http');
   const server = http.createServer(app);
 
-  if (basename(url).startsWith('.env.')) {
+  if (basename(url).startsWith('.env')) {
     let envUrl = getUrlFromEnv(url);
-    if (!envUrl) {
+    if (envUrl?.length) {
+      url = envUrl;
+    } else {
       console.log(chalk.red('\nError:'), 'No proxy found.');
       process.exit(1);
-    } else {
-      url = envUrl;
     }
   }
 
-  let proxyRequest = proxy(url);
+  if (!Array.isArray(url)) {
+    url = [url];
+  }
+
   let cache = new Cache(cacheFile);
 
   app.use(bodyParser.json())
   app.use(cors());
   app.all('*', (req, res) => {
-    proxyRequest(req.method, {
+    let actualURL = req.headers['x-forwarded-for'] || url[0];
+    let proxyHost = libUrl.parse(actualURL).host;
+    if (proxyHost === req.headers.host) {
+      console.log(
+        chalk.red('\nError:'),
+        `The local and proxy server ${proxyHost} are identical!`
+      );
+      return res.send({});
+    }
+    proxy(req.method, actualURL, {
       path: req.path,
       query: req.query,
       data: req.body,
@@ -85,7 +103,7 @@ function startServer(url, port, cacheFile) {
       cache.sync(req, result);
       res.send(result.text || result.body);
     }).catch(e => {
-      let result = e.response;
+      let result = e.response || {};
       let resText = result.text || result.body || e.message || e.toString();
       res.status(e.status || 500).send(resText);
     });
@@ -98,7 +116,7 @@ function startServer(url, port, cacheFile) {
   });
   server.listen(port, () => {
     console.log(`Proxy server started at http://localhost:${port}`);
-    console.log(`Use proxy: ${chalk.yellow(url)}\n`);
+    console.log(`Targets: ${chalk.yellow(url.join(', '))}\n`);
   });
 }
 
