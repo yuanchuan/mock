@@ -100,8 +100,8 @@ function startServer(url, port, cacheFile) {
       let headers = {...result.headers};
       delete headers['content-encoding'];
       res.set(headers);
-      cache.sync(req, result);
       res.send(result.text || result.body);
+      cache.sync(req, result);
     }).catch(e => {
       let result = e.response || {};
       let resText = result.text || result.body || e.message || e.toString();

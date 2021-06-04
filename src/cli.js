@@ -17,19 +17,19 @@ program
   .arguments('[data]')
   .option('-p, --port <port>', `server port (default: ${defaultPort})`)
   .option('-P, --proxy <proxy>', 'start proxy server from url or .env file')
-  .option('-s, --save <data>', 'save requests to local data file')
+  .option('-s, --save <save>', 'save requests to local data file')
   .action(run)
   .parse();
 
 function run(source, options) {
-  if (options.data) {
-    fs.ensureFileSync(options.data);
+  if (options.save) {
+    fs.ensureFileSync(options.save);
   }
   if (options.proxy) {
     return startProxyServer(
       options.proxy,
       options.port || defaultPort,
-      options.data
+      options.save
     );
   }
 
