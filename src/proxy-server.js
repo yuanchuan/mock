@@ -7,11 +7,11 @@ const Cache = require('./cache');
 
 function proxy(url) {
   let parsedURL = libUrl.parse(url);
-  let { port, hostname, path, protocol = 'https:' } = parsedURL;
+  let { port, hostname, path, protocol } = parsedURL;
   if (port) {
     hostname += ':' + port;
   }
-  let prefix = protocol + '//' + (hostname || '') + (path || '');
+  let prefix = (protocol || 'http:') + '//' + (hostname || '') + (path || '');
   return function(method, { query, data, headers, path }) {
     let urlPath = new libUrl.URL(path, prefix).href;
     console.log(
