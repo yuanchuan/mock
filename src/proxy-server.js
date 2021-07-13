@@ -85,6 +85,10 @@ function startServer(url, port, cacheFile) {
     let actualURL = req.headers['x-forwarded-for'] || url[0];
     let proxyHost = libUrl.parse(actualURL).host;
     if (proxyHost === req.headers.host) {
+      actualURL = url[0];
+      proxyHost = libUrl.parse(actualURL).host;
+    }
+    if (proxyHost === req.headers.host) {
       console.log(
         chalk.red('\nError:'),
         `The local and proxy server ${proxyHost} are identical!`
