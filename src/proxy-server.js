@@ -102,7 +102,6 @@ function startServer(url, port, cacheFile) {
       headers: req.headers
     }).then(result => {
       let headers = {...result.headers};
-      delete headers['content-encoding'];
       res.set(headers);
       res.send(result.text || result.body);
       cache.sync(req, result);

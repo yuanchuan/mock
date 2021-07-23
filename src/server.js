@@ -18,6 +18,7 @@ function startServer(dataSets, port) {
     let key = req.method.toUpperCase() + '|' + req.url;
     let data = getData(hostedData, key);
     if (data.headers) {
+      delete data.headers['content-encoding'];
       res.set(data.headers);
     }
     res.send(data.data);
