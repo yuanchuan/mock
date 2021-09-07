@@ -7,7 +7,7 @@ const { join, basename } = require('path');
 const Cache = require('./cache');
 
 function proxy(method, url, { query, data, headers, path }) {
-  let { full, hostname } = normizeUrl(url);
+  let { full, hostname } = normalizeUrl(url);
   let urlPath = new libUrl.URL(path, full).href;
   console.log(
     chalk.green(method),
@@ -43,7 +43,7 @@ function getUrlFromEnv(name) {
   } catch (e) {}
 }
 
-function normizeUrl(url) {
+function normalizeUrl(url) {
   let parsedURL = libUrl.parse(url);
   let { port, hostname, path, protocol } = parsedURL;
   if (port) {
@@ -79,7 +79,8 @@ function startServer(url, port, cacheFile) {
 
   let cache = new Cache(cacheFile);
 
-  app.use(bodyParser.json())
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({ extended: true }));
   app.use(cors());
   app.all('*', (req, res) => {
     let actualURL = req.headers['x-forwarded-for'] || url[0];
