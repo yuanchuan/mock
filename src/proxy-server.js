@@ -102,7 +102,8 @@ function startServer(url, port, cacheFile) {
       data: req.body,
       headers: req.headers
     }).then(result => {
-      let headers = {...result.headers};
+      let newHeaders = removeDumpKeys(result.headers);
+      let headers = {...newHeaders};
       delete headers['content-encoding'];
       res.set(headers);
       res.send(result.text || result.body);
@@ -122,6 +123,27 @@ function startServer(url, port, cacheFile) {
   server.listen(port, () => {
     console.log(`Proxy server started at http://localhost:${port}`);
     console.log(`Targets: ${chalk.yellow(url.join(', '))}\n`);
+  });
+}
+
+function removeDumpKeys(headers) {
+  let newHeaders = {};
+  for (let key in headers) {
+    let value = headers[key];
+    if (key === 'access-control-allow-origin' || key === 'access-control-allow-credentials') {
+      let _value = unique(String(value).split(', ')).join(', ');
+      newHeaders[key] = _value;
+    }  else {
+      newHeaders[key] = value;
+    }
+  }
+  return newHeaders;
+}
+
+
+function unique(array) {
+  return array.filter(function(v, i, self) {
+    return self.indexOf(v) === i;
   });
 }
 
